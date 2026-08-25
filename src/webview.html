@@ -107,14 +107,6 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
       <div class="cg"><h3>Chunk Statistics</h3>
         <div id="stats-panel"><div class="sr"><span class="sl">Loading...</span></div></div>
       </div>
-      <div class="cg"><h3>Shortcuts</h3>
-        <div style="font-size:9px;color:var(--fg2);line-height:1.6">
-          Ctrl+F Find &nbsp;|&nbsp; Ctrl+G Go to offset<br>
-          Ctrl+L Go to offset &nbsp;|&nbsp; Alt+Z Wrap<br>
-          PgDn/PgUp Navigate &nbsp;|&nbsp; F5 Refresh<br>
-          Esc Stop op / Close panel
-        </div>
-      </div>
     </div>
     <div id="editor">
       <div id="tabbar"><div class="tab"><span id="tab-name">—</span><span class="mode" id="tab-mode">[filtered]</span></div></div>
@@ -372,19 +364,12 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
     setup('btn-prev','prevPage');setup('btn-next','nextPage');
   })();
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (Escape only - rest handled by VS Code keybindings)
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'){
       $('analyse-panel').className='';$('file-scratch').className='';
       if(state.searching||state.scanning){send('abortScan',{});}
     }
-    if(e.ctrlKey&&e.key==='f'){e.preventDefault();$('search-q').focus();}
-    if(e.ctrlKey&&e.key==='g'){e.preventDefault();$('jump-offset').focus();}
-    if(e.ctrlKey&&e.key==='l'){e.preventDefault();$('jump-offset').focus();}
-    if(e.altKey&&(e.key==='z'||e.key==='Z')){e.preventDefault();send('toggleWrap',{});}
-    if(e.key==='F5'&&!e.ctrlKey){e.preventDefault();loadChunk(state.currentOffset);}
-    if(e.key==='PageDown'&&!e.ctrlKey&&!e.shiftKey){e.preventDefault();send('nextPage',{});}
-    if(e.key==='PageUp'&&!e.ctrlKey&&!e.shiftKey){e.preventDefault();send('prevPage',{});}
   });
 
   // ========== MESSAGE HANDLER ==========
@@ -514,6 +499,8 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
       case "toggleSlider":
         var el=$('file-scratch');el.className=el.className==='show'?'':'show';updateSlider();break;
       case "closeSlider": $('file-scratch').className='';break;
+      case "focusSearch": $('search-q').focus(); $('search-q').select(); break;
+      case "focusOffset": $('jump-offset').focus(); $('jump-offset').select(); break;
     }
   });
 

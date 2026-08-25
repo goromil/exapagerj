@@ -23,18 +23,74 @@
     "commands": [
       {
         "command": "exapager.open",
-        "title": "ExaPager: Open Large File",
+        "title": "Open Large File",
         "icon": "$(preview)"
       },
       {
         "command": "exapager.openActive",
-        "title": "ExaPager: Open Active File"
+        "title": "Open Active File"
       },
       {
         "command": "exapager.previewFile",
-        "title": "ExaPager: Preview File",
+        "title": "Preview File",
         "icon": "$(preview)"
+      },
+      {
+        "command": "exapager.focusSearch",
+        "title": "Focus Search",
+        "category": "ExaPager"
+      },
+      {
+        "command": "exapager.focusOffset",
+        "title": "Go To Offset",
+        "category": "ExaPager"
+      },
+      {
+        "command": "exapager.toggleWrap",
+        "title": "Toggle Wrap",
+        "category": "ExaPager"
+      },
+      {
+        "command": "exapager.reloadChunk",
+        "title": "Reload Chunk",
+        "category": "ExaPager"
+      },
+      {
+        "command": "exapager.nextPage",
+        "title": "Next Page",
+        "category": "ExaPager"
+      },
+      {
+        "command": "exapager.prevPage",
+        "title": "Previous Page",
+        "category": "ExaPager"
+      },
+      {
+        "command": "exapager.abortOperation",
+        "title": "Abort Operation",
+        "category": "ExaPager"
+      },
+      {
+        "command": "exapager.toggleSlider",
+        "title": "Toggle Position Slider",
+        "category": "ExaPager"
+      },
+      {
+        "command": "exapager.analyseChunk",
+        "title": "Analyse Chunk",
+        "category": "ExaPager"
       }
+    ],
+    "keybindings": [
+      { "command": "exapager.focusSearch", "key": "ctrl+f", "when": "exapager.active" },
+      { "command": "exapager.focusOffset", "key": "ctrl+g", "when": "exapager.active" },
+      { "command": "exapager.toggleWrap", "key": "alt+z", "when": "exapager.active" },
+      { "command": "exapager.reloadChunk", "key": "f5", "when": "exapager.active" },
+      { "command": "exapager.nextPage", "key": "pagedown", "when": "exapager.active" },
+      { "command": "exapager.prevPage", "key": "pageup", "when": "exapager.active" },
+      { "command": "exapager.abortOperation", "key": "escape", "when": "exapager.active" },
+      { "command": "exapager.toggleSlider", "key": "ctrl+shift+s", "when": "exapager.active" },
+      { "command": "exapager.analyseChunk", "key": "ctrl+shift+a", "when": "exapager.active" }
     ],
     "menus": {
       "explorer/context": [

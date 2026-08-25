@@ -54,6 +54,9 @@ export class ExaPagerPanel {
     panel.onDidChangeViewState(e => { if (e.webviewPanel.viewColumn === undefined) this.dispose(); }, null, this.disposables);
     vscode.window.onDidChangeActiveColorTheme(() => this.sendTheme(), null, this.disposables);
 
+    // Set context key for keybindings
+    vscode.commands.executeCommand("setContext", "exapager.active", true);
+
     panel.webview.html = getWebviewHtml();
     panel.webview.onDidReceiveMessage(async msg => await this.handleMessage(msg), undefined, this.disposables);
 
@@ -155,7 +158,7 @@ export class ExaPagerPanel {
 
   // ---- Chunk loading ----
 
-  private async loadChunk(offset: number): Promise<void> {
+  public async loadChunk(offset: number): Promise<void> {
     this.cancelScan();
     const seq = ++this.state.loadSeq;
     try {
@@ -280,7 +283,7 @@ export class ExaPagerPanel {
 
   // ---- Analyse ----
 
-  private async analyseAt(offset: number) {
+  public async analyseAt(offset: number) {
     try {
       const raw = await this.readFileRange(offset, 32 * 1024);
       if (raw.length === 0) { this.post("analyseError", { error: "EOF" }); return; }
@@ -295,7 +298,7 @@ export class ExaPagerPanel {
 
   // ---- Navigation with skip ----
 
-  private async nextPage(): Promise<void> {
+  public async nextPage(): Promise<void> {
     let off = this.state.currentOffset + CHUNK_SIZE;
     if (off >= this.state.fileSize) { vscode.window.showWarningMessage("ExaPager: At end of file"); return; }
     if (this.state.skipMode !== "off") {
@@ -354,7 +357,11 @@ export class ExaPagerPanel {
 
   // ---- Scan control ----
 
-  private cancelScan() {
+  public get currentOffset(): number { return this.state.currentOffset; }
+  public get wrapEnabled(): boolean { return this.state.wrapEnabled; }
+  public set wrapEnabled(v: boolean) { this.state.wrapEnabled = v; }
+
+  public cancelScan() {
     if (this.state.scanController) { this.state.scanController.abort(); this.state.scanController = null; }
   }
 
@@ -369,7 +376,7 @@ export class ExaPagerPanel {
     this.post("theme", { colors: palette });
   }
 
-  private post(cmd: string, data: Record<string, any> = {}): void {
+  public post(cmd: string, data: Record<string, any> = {}): void {
     this.panel.webview.postMessage({ cmd, ...data });
   }
 
@@ -382,6 +389,7 @@ export class ExaPagerPanel {
 
   public dispose() {
     this.cancelScan();
+    vscode.commands.executeCommand("setContext", "exapager.active", false);
     if (this.state.fd !== null) { try { fs.closeSync(this.state.fd); } catch { /* already closed */ } this.state.fd = null; }
     this.panel.dispose();
     while (this.disposables.length) this.disposables.pop()?.dispose();
@@ -392,6 +400,9 @@ export class ExaPagerPanel {
 // ---- Activation ----
 
 export function activate(context: vscode.ExtensionContext): void {
+  // Helper to get current panel
+  const getPanel = () => ExaPagerPanel.currentPanel;
+
   context.subscriptions.push(
     vscode.commands.registerCommand("exapager.open", () => {
       vscode.window.showOpenDialog({ openLabel: "Open with ExaPager", canSelectFiles: true, canSelectFolders: false, canSelectMany: false, filters: { Text: ["txt", "text", "log", "csv", "json", "xml", "html", "md"], All: ["*"] } })
@@ -409,6 +420,30 @@ export function activate(context: vscode.ExtensionContext): void {
         if (doc?.uri.scheme === "file") ExaPagerPanel.render(context.extensionUri, doc.uri.fsPath);
         else vscode.window.showErrorMessage("No file to preview.");
       }
+    }),
+    // Keybinding commands
+    vscode.commands.registerCommand("exapager.focusSearch", () => { getPanel()?.post("focusSearch"); }),
+    vscode.commands.registerCommand("exapager.focusOffset", () => { getPanel()?.post("focusOffset"); }),
+    vscode.commands.registerCommand("exapager.toggleWrap", () => {
+      const p = getPanel();
+      if (p) { p.wrapEnabled = !p.wrapEnabled; p.post("wrap", { enabled: p.wrapEnabled }); }
+    }),
+    vscode.commands.registerCommand("exapager.reloadChunk", () => {
+      const p = getPanel(); if (p) p.loadChunk(p.currentOffset);
+    }),
+    vscode.commands.registerCommand("exapager.nextPage", () => { getPanel()?.nextPage(); }),
+    vscode.commands.registerCommand("exapager.prevPage", () => {
+      const p = getPanel();
+      if (p) p.loadChunk(Math.max(0, p.currentOffset - CHUNK_SIZE));
+    }),
+    vscode.commands.registerCommand("exapager.abortOperation", () => {
+      const p = getPanel();
+      if (p) { p.cancelScan(); p.post("scanAborted"); }
+    }),
+    vscode.commands.registerCommand("exapager.toggleSlider", () => { getPanel()?.post("toggleSlider"); }),
+    vscode.commands.registerCommand("exapager.analyseChunk", () => {
+      const p = getPanel();
+      if (p) p.analyseAt(p.currentOffset);
     }),
   );
 }
