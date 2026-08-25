@@ -387,8 +387,36 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
         var lines=msg.lines||[];
         var lineCount=lines.length;
 
-        if(state.viewMode==='hex'||state.viewMode==='raw'){
+        if(state.viewMode==='hex'){
           updateStatus(msg.offset,lineCount,msg.stats);
+          showLoading(false);
+          break;
+        }
+
+        // Raw view — show decoded text with replacement chars visible
+        if(state.viewMode==='raw'){
+          var gutter2=$('gutter'), textArea2=$('text-area'), hexView2=$('hex-view'), rawView2=$('raw-view');
+          gutter2.style.display='block'; textArea2.style.display='none';
+          hexView2.style.display='none'; rawView2.style.display='none';
+          var rawText=msg.rawText||'';
+          var rawLines=rawText.split('\n');
+          if(rawLines.length>0 && !rawText.endsWith('\n')) rawLines.pop();
+          state.lines=rawLines;
+          var sl2=msg.startLine||1;
+          var gtext2='', thtml2='';
+          for(var i2=0;i2<rawLines.length;i2++){
+            gtext2+=(sl2+i2)+'\n';
+            var t2=escapeHtml(rawLines[i2]);
+            if(state.searchQuery) t2=highlightText(t2,state.searchQuery);
+            thtml2+=t2+'\n';
+          }
+          gutter2.textContent=gtext2;
+          textArea2.innerHTML=thtml2;
+          textArea2.style.display='block';
+          gutter2.style.display='block';
+          updateStatus(msg.offset,rawLines.length,msg.stats);
+          if(msg.rejected&&msg.stats) showRejectedBanner(msg.stats);
+          $('jump-offset').value=msg.offset;
           showLoading(false);
           break;
         }
@@ -421,15 +449,7 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
         updateSlider();showLoading(false);
         break;
       }
-      case "raw": {
-        var hv2=$('hex-view'),rv2=$('raw-view'),ta2=$('text-area'),gt2=$('gutter');
-        ta2.style.display='none';gt2.style.display='none';hv2.style.display='none';
-        rv2.style.display='block';
-        rv2.textContent=msg.data;
-        updateSlider();showLoading(false);
-        break;
-      }
-      case "searchResult": {
+       case "searchResult": {
         state.searching=false;state.searchMatches=msg.matches||[];
         renderSearchResults(state.searchMatches,msg.scanned||0);
         clearOpStatus();
@@ -467,9 +487,6 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
         var ta4=$('text-area');
         ta4.style.whiteSpace=msg.enabled?'pre-wrap':'pre';
         ta4.style.wordBreak=msg.enabled?'break-all':'normal';
-        var rv4=$('raw-view');
-        rv4.style.whiteSpace=msg.enabled?'pre-wrap':'pre';
-        rv4.style.wordBreak=msg.enabled?'break-all':'normal';
         break;
       case "skipMode":
         state.skipMode=msg.mode;

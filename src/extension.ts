@@ -215,13 +215,11 @@ export class ExaPagerPanel {
         fileSize: this.state.fileSize, encoding: usedEncoding,
         rejected: !isReadable, lines: escapedLines, startLine: this.state.startLine,
         decodedEncoding: usedEncoding !== this.state.encoding ? usedEncoding : null,
+        rawText: rawText,
       });
 
-      // Hex / raw view: also send corresponding data
+      // Hex view: also send hex dump
       if (this.state.viewMode === "hex") await this.hexDump(offset);
-      if (this.state.viewMode === "raw") {
-        this.post("raw", { data: raw.toString("hex"), offset, size: raw.length, fileSize: this.state.fileSize });
-      }
     } catch (err: any) {
       if (seq === this.state.loadSeq) {
         this.post("status", { text: `Error: ${err?.message ?? String(err)}` });
