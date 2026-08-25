@@ -244,11 +244,12 @@ export class ExaPagerPanel {
     this.cancelScan();
     const controller = new AbortController();
     this.state.scanController = controller;
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 60000);
     try {
       const matches: number[] = [];
       const q = query.toLowerCase();
       let pos = 0;
+      let lastProgress = 0;
       while (pos < this.state.fileSize && matches.length < 100) {
         if (controller.signal.aborted) break;
         const readSize = Math.min(SEARCH_WINDOW, this.state.fileSize - pos);
@@ -263,9 +264,13 @@ export class ExaPagerPanel {
           idx++;
         }
         pos += readSize;
+        const progress = Math.round((pos / this.state.fileSize) * 100);
+        if (progress !== lastProgress) { lastProgress = progress; this.post("searchProgress", { progress }); }
       }
       clearTimeout(timeout);
-      this.post("searchResult", { matches, count: matches.length, query, scanned: pos });
+      if (!controller.signal.aborted) {
+        this.post("searchResult", { matches, count: matches.length, query, scanned: pos });
+      }
     } catch (err: any) {
       clearTimeout(timeout);
       this.post("status", { text: `Search error: ${err?.message ?? String(err)}` });

@@ -107,6 +107,14 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
       <div class="cg"><h3>Chunk Statistics</h3>
         <div id="stats-panel"><div class="sr"><span class="sl">Loading...</span></div></div>
       </div>
+      <div class="cg"><h3>Shortcuts</h3>
+        <div style="font-size:9px;color:var(--fg2);line-height:1.6">
+          Ctrl+F Find &nbsp;|&nbsp; Ctrl+G Go to offset<br>
+          Ctrl+L Go to offset &nbsp;|&nbsp; Alt+Z Wrap<br>
+          PgDn/PgUp Navigate &nbsp;|&nbsp; F5 Refresh<br>
+          Esc Stop op / Close panel
+        </div>
+      </div>
     </div>
     <div id="editor">
       <div id="tabbar"><div class="tab"><span id="tab-name">—</span><span class="mode" id="tab-mode">[filtered]</span></div></div>
@@ -127,7 +135,7 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
     <span id="st-offset">0 / 0</span><span class="sep">|</span>
     <span id="st-encoding">UTF-8</span><span class="sep">|</span>
     <span id="st-scripts">—</span>
-    <span class="right"><span id="st-viewmode">text</span><span class="sep">|</span><span id="st-readable"></span></span>
+    <span class="right"><span id="st-viewmode">text</span><span class="sep">|</span><span id="st-readable"></span><span class="sep">|</span><span id="st-opstatus"></span><button id="btn-abort-op" style="display:none;margin-left:4px;font-size:9px;padding:0 6px" class="warn">Stop</button></span>
     <button id="btn-slider" style="margin-left:8px;font-size:9px;padding:1px 4px" title="File position slider">&#8646;</button>
   </div>
 </div>
@@ -144,7 +152,7 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
   var CHUNK = 262144;
   var state = {
     fileSize: 0, fileName: '', currentOffset: 0,
-    searchMatches: [], searchQuery: '',
+    searchMatches: [], searchQuery: '', searching: false, scanning: false,
     viewMode: 'text', skipMode: 'off', scanCancelled: false,
     stats: null, decodedEncoding: null, startLine: 1, sequential: true,
   };
@@ -162,6 +170,16 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
 
   // Loading overlay
   function showLoading(v, msg){ var el=$('loading'); el.className=v?'show':''; el.textContent=msg||'Loading...'; }
+
+  // Operational status (search, scan)
+  function setOpStatus(op, label, pct){
+    var st=$('st-opstatus'), ab=$('btn-abort-op');
+    if(!op){st.textContent='';ab.style.display='none';return;}
+    st.textContent=label;st.style.color='#dcdcaa';
+    ab.style.display='inline-block';ab.textContent='Stop ('+pct+'%)';
+    state.searching=(op==='search');state.scanning=(op==='scan');
+  }
+  function clearOpStatus(){setOpStatus(null,'',0);state.searching=false;state.scanning=false;}
 
   // Slider
   function updateSlider(){
@@ -327,7 +345,7 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
   $('btn-text').onclick=function(){setView('text');};
   $('btn-hex').onclick=function(){setView('hex');};
   $('btn-raw').onclick=function(){setView('raw');};
-  $('btn-search').onclick=function(){var q=$('search-q').value.trim();if(q){state.searchQuery=q;send('search',{query:q,wholeFile:true});}};
+  $('btn-search').onclick=function(){var q=$('search-q').value.trim();if(q){state.searchQuery=q;state.searching=true;setOpStatus('search','Searching...','0');send('search',{query:q,wholeFile:true});}};
   $('search-q').onkeydown=function(e){if(e.key==='Enter')$('btn-search').click();};
   $('btn-prev').onclick=function(){send('prevPage',{});};
   $('btn-next').onclick=function(){send('nextPage',{});};
@@ -336,6 +354,7 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
   $('btn-jr').onclick=function(){send('jumpReadable',{});};
   $('btn-ju').onclick=function(){send('jumpUnreadable',{});};
   $('btn-abort').onclick=function(){send('abortScan',{});};
+  $('btn-abort-op').onclick=function(){send('abortScan',{});};
   $('btn-analyse').onclick=function(){send('analyse',{offset:state.currentOffset});};
   $('btn-slider').onclick=function(){var el=$('file-scratch');el.className=el.className==='show'?'':'show';updateSlider();};
 
@@ -355,8 +374,12 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
 
   // Keyboard shortcuts
   document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'){$('analyse-panel').className='';$('file-scratch').className='';}
+    if(e.key==='Escape'){
+      $('analyse-panel').className='';$('file-scratch').className='';
+      if(state.searching||state.scanning){send('abortScan',{});}
+    }
     if(e.ctrlKey&&e.key==='f'){e.preventDefault();$('search-q').focus();}
+    if(e.ctrlKey&&e.key==='g'){e.preventDefault();$('jump-offset').focus();}
     if(e.ctrlKey&&e.key==='l'){e.preventDefault();$('jump-offset').focus();}
     if(e.altKey&&(e.key==='z'||e.key==='Z')){e.preventDefault();send('toggleWrap',{});}
     if(e.key==='F5'&&!e.ctrlKey){e.preventDefault();loadChunk(state.currentOffset);}
@@ -422,14 +445,18 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
         break;
       }
       case "searchResult": {
-        state.searchMatches=msg.matches||[];
+        state.searching=false;state.searchMatches=msg.matches||[];
         renderSearchResults(state.searchMatches,msg.scanned||0);
+        clearOpStatus();
         if(state.searchQuery&&state.viewMode==='text'){
           var ta3=$('text-area'),ch=ta3.innerHTML;
           if(ch) ta3.innerHTML=highlightText(ch,state.searchQuery);
         }
         break;
       }
+      case "searchProgress":
+        setOpStatus('search','Searching',msg.progress);
+        break;
       case "analyse": renderAnalyse(msg.data);showLoading(false);break;
       case "analyseError": $('analyse-panel').className='';showLoading(false);break;
       case "closeAnalyse": $('analyse-panel').className='';break;
@@ -473,16 +500,17 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
         showLoading(true,'Scanning...');
         $('scan-label').textContent='Scanning... '+msg.progress+'%';
         $('scan-bf').style.width=msg.progress+'%';
+        setOpStatus('scan','Scanning',msg.progress);
         break;
       case "scanDone":
         $('scan-prog').style.display='none';
         $('scan-bar').style.display='none';
-        showLoading(false);break;
+        showLoading(false);clearOpStatus();break;
       case "scanAborted":
         state.scanCancelled=true;
         $('scan-prog').style.display='none';
         $('scan-bar').style.display='none';
-        showLoading(false);break;
+        showLoading(false);clearOpStatus();break;
       case "toggleSlider":
         var el=$('file-scratch');el.className=el.className==='show'?'':'show';updateSlider();break;
       case "closeSlider": $('file-scratch').className='';break;

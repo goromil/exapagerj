@@ -71,6 +71,8 @@ export function detectScripts(text: string): Record<string, number> {
     else if ((code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF)) script = "Kana";
     else if ((code >= 0x0600 && code <= 0x06FF) || (code >= 0x0750 && code <= 0x077F)) script = "Arabic";
     else if (code >= 0x0590 && code <= 0x05FF) script = "Hebrew";
+    else if (code >= 0x0530 && code <= 0x058F) script = "Armenian";
+    else if ((code >= 0x10A0 && code <= 0x10FF) || (code >= 0x2D00 && code <= 0x2D2F)) script = "Georgian";
     else if (code >= 0x0900 && code <= 0x097F) script = "Devanagari";
     else if (code >= 0x0E00 && code <= 0x0E7F) script = "Thai";
     else if ((code >= 0x2200 && code <= 0x22FF) || (code >= 0x2A00 && code <= 0x2AFF)) script = "Math";
@@ -110,8 +112,14 @@ export function probeEncoding(raw: Buffer): { name: string; badPct: number; badC
   // Extended encodings via iconv-lite
   const encToProbe = [
     { name: "windows-1251", hint: "Cyrillic" },
+    { name: "koi8-r", hint: "Russian KOI8-R" },
     { name: "windows-1252", hint: "Western European" },
-    { name: "windows-1250", hint: "Central European" },
+    { name: "windows-1250", hint: "Polish/Czech/Croatian" },
+    { name: "windows-1253", hint: "Armenian/Greek" },
+    { name: "windows-1254", hint: "Turkish" },
+    { name: "windows-1255", hint: "Hebrew" },
+    { name: "iso-8859-8", hint: "Hebrew ISO" },
+    { name: "windows-1257", hint: "Baltic" },
     { name: "gb18030", hint: "Simplified CJK" },
     { name: "gbk", hint: "GBK" },
     { name: "shift_jis", hint: "Japanese" },
@@ -119,6 +127,8 @@ export function probeEncoding(raw: Buffer): { name: string; badPct: number; badC
     { name: "big5", hint: "Traditional CJK" },
     { name: "iso-8859-5", hint: "Cyrillic ISO" },
     { name: "iso-8859-7", hint: "Greek" },
+    { name: "georgian-academy", hint: "Georgian" },
+    { name: "maccyrillic", hint: "Mac Cyrillic" },
   ];
 
   try {
@@ -151,6 +161,21 @@ export function probeEncoding(raw: Buffer): { name: string; badPct: number; badC
         // Check for typical Cyrillic byte range 0xC0-0xFF
         const cyrillicBytes = raw.filter(b => b >= 0xC0 && b <= 0xFF).length;
         if (cyrillicBytes > highBytes * 0.3) r.badPct = Math.max(0, r.badPct - 5);
+      }
+      if (r.name === "koi8-r") {
+        // KOI8-R: letters in 0xA0-0xFF, frequent 0xE0+ bytes
+        const koi8Bytes = raw.filter(b => b >= 0xA0 && b <= 0xFF).length;
+        if (koi8Bytes > highBytes * 0.4) r.badPct = Math.max(0, r.badPct - 5);
+      }
+      if (["windows-1255", "iso-8859-8"].includes(r.name)) {
+        // Hebrew: 0xE0-0xFF range for characters
+        const hebBytes = raw.filter(b => b >= 0xE0 && b <= 0xFF).length;
+        if (hebBytes > highBytes * 0.3 && hebBytes > total * 0.05) r.badPct = Math.max(0, r.badPct - 3);
+      }
+      if (r.name === "georgian-academy") {
+        // Georgian Academy: 0xE0-0xEF
+        const geoBytes = raw.filter(b => b >= 0xE0 && b <= 0xEF).length;
+        if (geoBytes > highBytes * 0.5) r.badPct = Math.max(0, r.badPct - 3);
       }
     }
   }
