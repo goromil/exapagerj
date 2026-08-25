@@ -55,13 +55,14 @@
   },
   "scripts": {
     "vscode:prepublish": "tsc -p ./",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && node -e \"require('fs').copyFileSync('src/webview.html','out/webview.html')\"",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && npx mocha --ui tdd out/test/utils.test.js",
     "test:vscode": "npm run compile && node ./out/test/runTest.js",
     "coverage": "npm run compile && npx c8 --reporter=lcov --reporter=text npx mocha --ui tdd out/test/utils.test.js"
   },
   "devDependencies": {
+    "@types/iconv-lite": "^0.0.1",
     "@types/mocha": "^10.0.0",
     "@types/node": "^20.19.43",
     "@types/vscode": "^1.74.0",
@@ -69,5 +70,8 @@
     "c8": "^9.0.0",
     "mocha": "^10.2.0",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.7.3"
   }
 }

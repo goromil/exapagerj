@@ -2,10 +2,9 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "ExaPager Extension",
+      "name": "Run ExaPager",
       "type": "extensionHost",
       "request": "launch",
-      "program": "${workspaceFolder}",
       "preLaunchTask": "npm: compile"
     }
   ]
