@@ -4,6 +4,13 @@ View multi-GB text files inside VS Code with encoding auto-detection, hex dump, 
 
 ExaPager reads files directly from the VS Code extension host using Node.js `fs` with memory-mapped chunked reads, bypassing the editor's built-in file size limits.
 
+## Changelog
+
+### v0.1.0 (2026-08-25)
+- **Fix**: Raw view loading hang — `escapeHtml` was undefined in frontend (replaced with `esc`)
+- **Perf**: Replaced `+=` string concatenation with `Array.push` + `.join()` in chunk rendering (10-100x faster on large files)
+- **Test**: Added BOM detection and encoding heuristic tests — coverage at 98.15%
+
 ## Differences from exapagerpy
 
 | Feature | exapagerpy (Python) | exapagerj (TypeScript) |

@@ -202,6 +202,41 @@ suite("Utils Tests", () => {
       const results = probeEncoding(data);
       assert.ok(results.some(r => r.badPct < 10));
     });
+
+    test("detects UTF-8 BOM", () => {
+      const data = Buffer.from([0xEF, 0xBB, 0xBF, 0x48, 0x65, 0x6C, 0x6C, 0x6F]);
+      const results = probeEncoding(data);
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0].name, "utf-8");
+      assert.strictEqual(results[0].badPct, 0);
+    });
+
+    test("detects UTF-16 LE BOM", () => {
+      const data = Buffer.from([0xFF, 0xFE, 0x48, 0x00, 0x65, 0x00]);
+      const results = probeEncoding(data);
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0].name, "utf-16le");
+    });
+
+    test("detects UTF-16 BE BOM", () => {
+      const data = Buffer.from([0xFE, 0xFF, 0x00, 0x48, 0x00, 0x65]);
+      const results = probeEncoding(data);
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0].name, "utf-16be");
+    });
+
+    test("CJK heuristic boosts CJK encodings", () => {
+      const data = Buffer.from([0x81, 0x40, 0x82, 0xA0, 0x83, 0x40, 0x84, 0x40, 0x85, 0x40, 0x86, 0x40, 0x87, 0x40, 0x88, 0x40]);
+      const results = probeEncoding(data);
+      assert.ok(results.length > 0);
+    });
+
+    test("cyrrillic heuristic boosts windows-1251", () => {
+      const data = Buffer.from([0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF]);
+      const results = probeEncoding(data);
+      assert.ok(results.length > 0);
+      assert.ok(results.some(r => r.name === "windows-1251"));
+    });
   });
 
   suite("analyseChunk", () => {

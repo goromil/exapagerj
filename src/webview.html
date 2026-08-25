@@ -403,15 +403,15 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
           if(rawLines.length>0 && !rawText.endsWith('\n')) rawLines.pop();
           state.lines=rawLines;
           var sl2=msg.startLine||1;
-          var gtext2='', thtml2='';
+          var gArr=[], tArr=[];
           for(var i2=0;i2<rawLines.length;i2++){
-            gtext2+=(sl2+i2)+'\n';
-            var t2=escapeHtml(rawLines[i2]);
+            gArr.push(sl2+i2);
+            var t2=esc(rawLines[i2]);
             if(state.searchQuery) t2=highlightText(t2,state.searchQuery);
-            thtml2+=t2+'\n';
+            tArr.push(t2);
           }
-          gutter2.textContent=gtext2;
-          textArea2.innerHTML=thtml2;
+          gutter2.textContent=gArr.join('\n');
+          textArea2.innerHTML=tArr.join('\n');
           textArea2.style.display='block';
           gutter2.style.display='block';
           updateStatus(msg.offset,rawLines.length,msg.stats);
@@ -425,16 +425,16 @@ button.warn{background:#856404;border-color:#856404;color:#fff}
         var gutter=$('gutter'), textArea=$('text-area'), hexView=$('hex-view'), rawView=$('raw-view');
         gutter.style.display='block'; textArea.style.display='block';
         hexView.style.display='none'; rawView.style.display='none';
-        var gtext='', thtml='';
+        var gArr=[], tArr=[];
         var sl=msg.startLine||1;
         for(var i=0;i<lines.length;i++){
-          gtext+=(sl+i)+'\n';
+          gArr.push(sl+i);
           var t=lines[i];
           if(state.searchQuery) t=highlightText(t,state.searchQuery);
-          thtml+=t+'\n';
+          tArr.push(t);
         }
-        gutter.textContent=gtext;
-        textArea.innerHTML=thtml;
+        gutter.textContent=gArr.join('\n');
+        textArea.innerHTML=tArr.join('\n');
         updateStatus(msg.offset,lineCount,msg.stats);
         if(msg.rejected&&msg.stats) showRejectedBanner(msg.stats);
         $('jump-offset').value=msg.offset;

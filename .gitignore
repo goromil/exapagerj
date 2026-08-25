@@ -4,3 +4,6 @@ out/
 .DS_Store
 coverage/
 testfiles/
+
+#opencode sessions
+session-ses*.md
