@@ -32,7 +32,7 @@
       },
       {
         "command": "exapager.previewFile",
-        "title": "Preview File",
+        "title": "Preview File (ExaPager)",
         "icon": "$(preview)"
       },
       {
